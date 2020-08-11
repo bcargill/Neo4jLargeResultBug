@@ -16,9 +16,3 @@ docker run `
     --env NEO4J_AUTH=neo4j/foobar `
 neo4j    
 </pre>
-
-3 tests in project
-- Step1_CreateTestData
-- Step2_RunTest
-- Step3_DeleteTestData
-    
