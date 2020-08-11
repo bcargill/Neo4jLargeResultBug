@@ -7,8 +7,7 @@ using System.Diagnostics;
 namespace Neo4jLargeResultBug
 {
     /// <summary>
-    /// uses the following docker setup:
-    /// docker run --publish=7474:7474 --publish=7687:7687  env NEO4J_AUTH=neo4j/foobar neo4j
+    ///
     /// </summary>
     [TestClass]
     public class Neo4jLargeResultBug
