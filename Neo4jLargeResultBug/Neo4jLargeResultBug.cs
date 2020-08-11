@@ -34,26 +34,6 @@ namespace Neo4jLargeResultBug
             _driver.CloseAsync().Wait();
         }
 
-        [TestMethod]
-        public void Step2_RunTest()
-        {
-            var i = 0;
-            var retval = new List<IRecord>();
-
-            var session = _driver.AsyncSession();
-            var cursor = session.RunAsync("match (p:Foo)-[:foobar]->(b:Bar) return p, b.keyval").Result;
-            while (cursor.FetchAsync().Result)
-            {
-                i++;
-                retval.Add(cursor.Current);
-                Debug.WriteLine("Record: " + i);
-            }
-            Debug.WriteLine("Done");
-            Debug.WriteLine("Total count: " + retval.Count);
-
-            session.CloseAsync().Wait();
-        }
-
 
         [TestMethod]
         public void Step1_CreateTestData()
@@ -113,6 +93,27 @@ namespace Neo4jLargeResultBug
                 Debug.Write(".");
             }
             reltx.CommitAsync().Wait();
+
+            session.CloseAsync().Wait();
+        }
+
+
+        [TestMethod]
+        public void Step2_RunTest()
+        {
+            var i = 0;
+            var retval = new List<IRecord>();
+
+            var session = _driver.AsyncSession();
+            var cursor = session.RunAsync("match (p:Foo)-[:foobar]->(b:Bar) return p, b.keyval").Result;
+            while (cursor.FetchAsync().Result)
+            {
+                i++;
+                retval.Add(cursor.Current);
+                Debug.WriteLine("Record: " + i);
+            }
+            Debug.WriteLine("Done");
+            Debug.WriteLine("Total count: " + retval.Count);
 
             session.CloseAsync().Wait();
         }
