@@ -8,15 +8,7 @@ namespace Neo4jLargeResultBug
 {
     /// <summary>
     /// uses the following docker setup:
-    /// docker run `
-	///      --name neo4j-foobar `
-	///      --detach `
-    ///      --publish=7474:7474 --publish=7687:7687 `
-    ///      --volume=$HOME/neo4j/data:/data --volume=$HOME/neo4j/logs:/logs `
-	///      --env NEO4J_dbms_memory_pagecache_size = 1G `
-	///      --env NEO4J_dbms_memory_heap_max__size = 1G `
-	///      --env NEO4J_AUTH = neo4j / foobar `
-    ///      neo4j
+    /// docker run --publish=7474:7474 --publish=7687:7687  env NEO4J_AUTH=neo4j/foobar neo4j
     /// </summary>
     [TestClass]
     public class Neo4jLargeResultBug
@@ -39,14 +31,17 @@ namespace Neo4jLargeResultBug
         public void Step1_CreateTestData()
         {
             var session = _driver.AsyncSession();
+            var fooCount = 50;
+            var barCount = 500;
 
-            Debug.WriteLine("Creating Foos");
-            for (int i = 0; i < 50; i++)
+            Debug.WriteLine("Creating Foos and Bars");
+            for (int i = 0; i < barCount; i++)
             {
-                var tx = session.BeginTransactionAsync().Result;
-                for (int j = 0; j < 1000; j++)
+                
+                session.RunAsync("CREATE (n:Bar $properties)", new { properties = new Dictionary<string, object> { { "keyval", i } } }).Wait();
+                for (int j = 0; j < fooCount; j++)
                 {
-                    tx.RunAsync("CREATE (n:Foo $properties)",
+                    session.RunAsync("CREATE (n:Foo $properties)",
                         new
                         {
                             properties = new Dictionary<string, object>
@@ -66,18 +61,9 @@ namespace Neo4jLargeResultBug
                                             { "guid13", Guid.NewGuid().ToString() }
                                          }
                         }).Wait();
-                }
-                tx.CommitAsync().Wait();
+                }                                 
                 Debug.Write(".");
             }
-
-            Debug.WriteLine("Creating Bars");
-            var bartx = session.BeginTransactionAsync().Result;
-            for (int i = 0; i < 100; i++)
-            {
-                bartx.RunAsync("CREATE (n:Bar $properties)", new { properties = new Dictionary<string, object> { { "keyval", i } } }).Wait();
-            }
-            bartx.CommitAsync().Wait();
 
             Debug.WriteLine("Creating Foo index");
             session.RunAsync("CREATE INDEX fooidx FOR(n:Foo) ON(n.keyval)").Wait();
@@ -86,14 +72,12 @@ namespace Neo4jLargeResultBug
             session.RunAsync("CREATE INDEX baridx FOR(n:Bar) ON(n.keyval)").Wait();
 
             Debug.WriteLine("Creating foobar relationships");
-            var reltx = session.BeginTransactionAsync().Result;
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < barCount; i++)
             {
-                reltx.RunAsync($"MATCH (f:Foo),(b:Bar) WHERE f.keyval= {i} AND b.keyval= {i} CREATE(f)-[r: foobar]->(b) RETURN 1");
+                session.RunAsync($"MATCH (f:Foo),(b:Bar) WHERE f.keyval= {i} AND b.keyval= {i} CREATE(f)-[r: foobar]->(b) RETURN 1");
                 Debug.Write(".");
             }
-            reltx.CommitAsync().Wait();
-
+            
             session.CloseAsync().Wait();
         }
 
